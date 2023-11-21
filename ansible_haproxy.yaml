@@ -1,0 +1,27 @@
+---
+- hosts: all
+  become: true
+  vars:
+    minikube_version: 1
+
+  tasks:
+
+  - name: Install HAproxy
+    apt:
+        name: haproxy
+        state: latest
+        update_cache: true
+
+  - name: Install dataplane
+    ansible.builtin.shell: |
+      curl -LO https://github.com/haproxytech/dataplaneapi/releases/download/v2.8.4/dataplaneapi_2.8.4_linux_amd64.deb
+      sudo dpkg -i dataplaneapi_2.8.4_linux_amd64.deb
+      exit 0
+    args:
+      chdir: /home/vagrant/
+      creates: /usr/sbin/dataplaneapi
+  
+  - name: Setup haproxy and api in config config_file
+    ansible.builtin.shell: |
+      echo "Setup haproxy and api in config config_file"
+    

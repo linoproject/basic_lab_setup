@@ -1,0 +1,42 @@
+---
+- hosts: all
+  become: true
+  vars:
+    default_username: vagrant
+    default_docker_group: docker
+    
+
+  tasks:
+    - name: Install Terraform by official docs
+      ansible.builtin.shell: |
+        wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+        sudo apt update && sudo apt install terraform
+        exit 0
+      args:
+        chdir: /home/vagrant/
+        creates: /usr/bin/terraform
+    # - name: Install required system packages
+    #   apt:
+    #     pkg:
+    #       - gnupg
+    #       - software-properties-common
+    #     state: latest
+    #     update_cache: true
+    
+    # - name: Add Docker PGP apt Key
+    #   apt_key:
+    #     url: https://apt.releases.hashicorp.com/gpg
+    #     state: present
+    
+    # - name: Add Docker Repository
+    #   apt_repository:
+    #     repo: deb https://apt.releases.hashicorp.com focal stable
+    #     state: present
+    #     validate_certs: false
+    
+    # - name: Update apt and install terraform
+    #   apt:
+    #     name: terraform
+    #     state: latest
+    #     update_cache: true

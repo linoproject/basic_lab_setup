@@ -1,0 +1,58 @@
+---
+- hosts: all
+  become: true
+  vars:
+    minikube_version: 1
+
+  tasks:
+    - name: Install minkube
+      ansible.builtin.shell: |
+        curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        sudo install minikube-linux-amd64 /usr/local/bin/minikube
+        exit 0
+      args:
+        chdir: /home/vagrant/
+        creates: /usr/local/bin/minikube
+    
+    - name: Install bash-completion
+      apt:
+        name: bash-completion 
+        state: latest
+        update_cache: true
+
+    - name: Install kubectl
+      ansible.builtin.shell: |
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+        kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null
+        exit 0
+      args:
+        chdir: /home/vagrant/
+        creates: /usr/local/bin/kubectl
+
+    - name: Install helm
+      ansible.builtin.shell: |      
+        curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+        sudo apt-get install apt-transport-https --yes
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+        sudo apt-get update
+        exit 0
+      args:
+        chdir: /home/vagrant/
+        creates: /etc/apt/sources.list.d/helm-stable-debian.list
+
+    - name: Install HELM pt2
+      apt:
+        name: helm
+        state: latest
+        update_cache: true
+    
+    - name: Fix homedir permission 
+      ansible.builtin.file:
+        path: /home/vagrant/
+        state: directory
+        owner: vagrant
+        group: vagrant
+
+    
+    

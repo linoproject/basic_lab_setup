@@ -1,0 +1,18 @@
+---
+- hosts: all
+  become: true
+  vars:
+    default_username: vagrant
+    default_docker_group: docker
+    
+
+  tasks:
+    - name: Install Drone-cli
+      ansible.builtin.shell: |
+        curl -L https://github.com/harness/drone-cli/releases/latest/download/drone_linux_amd64.tar.gz | tar zx
+        sudo install -t /usr/local/bin drone
+        exit 0
+      args:
+        chdir: /home/vagrant/
+        creates: /usr/local/bin/drone
+  

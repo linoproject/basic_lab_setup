@@ -1,0 +1,9 @@
+{
+    "ip": "192.168.0.1", 
+    "vmnet": "vmnetX", 
+    "homedir": "/homedir", 
+    "mountdir": "/home/vagrant/mnt", 
+    "vmname": "vmname", 
+    "memsize": "1024", 
+    "cpu": "1" 
+}
