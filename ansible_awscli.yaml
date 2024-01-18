@@ -1,0 +1,36 @@
+---
+- hosts: all
+  become: true
+  vars:
+    default_username: vagrant
+    default_docker_group: docker
+
+  tasks:
+    - name: Install package dependencies.
+      package: name={{ item }} state=present
+      with_items:
+        - python3
+        - unzip
+
+    - name: Link python-python3
+      ansible.builtin.shell: | 
+        ln -s /usr/bin/python3 /usr/bin/python
+      args:
+        chdir: /home/vagrant/
+        creates: /usr/bin/python
+    
+    - name: Download the awscli bundle.
+      get_url: url=https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip dest=/tmp/awscli-bundle.zip
+      register: aws_cli_download_bundle
+
+    - name: Unarchive the installer.
+      unarchive: src=/tmp/awscli-bundle.zip dest=/tmp copy=no creates=/tmp/aws
+      when: aws_cli_download_bundle.changed
+      register: aws_cli_unarchive_installer
+
+    - name: Install awscli package.
+      shell: /tmp/aws/install -i /usr/local/aws -b /usr/bin
+      #python /tmp/awscli-bundle/install -i /usr/local/aws -b /usr/bin/aws
+      args:
+        creates: /usr/bin/aws
+      when: aws_cli_unarchive_installer.changed

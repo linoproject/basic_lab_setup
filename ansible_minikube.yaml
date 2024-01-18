@@ -18,7 +18,7 @@
       apt:
         name: bash-completion 
         state: latest
-        update_cache: true
+        update_cache: false
 
     - name: Install kubectl
       ansible.builtin.shell: |
