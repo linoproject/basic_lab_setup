@@ -1,0 +1,43 @@
+---
+- hosts: all
+  become: true
+  vars:
+    default_size: 30G
+    default_vg: ubuntu--vg
+    default_name: data
+    default_path: /opt/data
+    
+    
+  tasks:
+    - name: "Prepare base system"
+      shell: "echo Prepare base system"
+
+    - name: Create the "lv-data" Logical Volume.
+      lvol:
+        vg: "ubuntu-vg"
+        lv: "data"
+        size: "{{ default_size }}"
+        active: yes
+        force: no
+        state: present
+    
+    - name: Create a "data" filesystem on lvm "/dev/mapper/ubuntu--vg-data".
+      filesystem:
+        fstype: "ext4"
+        dev: "/dev/mapper/ubuntu--vg-{{ default_name }}"
+        force: no
+
+
+    - name: Create a directory to mount the filesystem for mysql.
+      file:
+        path: "/opt/data"
+        state: directory
+        mode: '0755'
+
+    - name: Mount www disk
+      mount:
+        path: "/opt/data"
+        src: "/dev/mapper/ubuntu--vg-{{ default_name }}"
+        fstype: "ext4"
+        opts: rw,nosuid,noexec
+        state: mounted

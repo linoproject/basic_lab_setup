@@ -5,5 +5,7 @@
     "mountdir": "/home/vagrant/mnt", 
     "vmname": "vmname", 
     "memsize": "1024", 
+    "disk_ext_name": "data",
+    "disk_ext_size": "50GB",
     "cpu": "1" 
 }
