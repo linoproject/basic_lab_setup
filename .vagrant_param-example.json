@@ -1,11 +1,20 @@
 {
-    "ip": "192.168.0.1", 
-    "vmnet": "vmnetX", 
-    "homedir": "/homedir", 
-    "mountdir": "/home/vagrant/mnt", 
     "vmname": "vmname", 
+
+    "cpu": "1",
     "memsize": "1024", 
     "disk_ext_name": "data",
     "disk_ext_size": "50GB",
-    "cpu": "1" 
+
+    "ip": "192.168.0.1", 
+    "vmnet": "vmnetX_or_HostNetwork", 
+
+    "homedir": "/homedir", 
+    "mountdir": "/home/vagrant/mnt", 
+    
+    
+    
+   
+    "config":"DMH_R_TA",
+    "custom_ansible": "WIP"
 }
