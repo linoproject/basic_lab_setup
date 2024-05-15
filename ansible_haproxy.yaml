@@ -20,8 +20,22 @@
     args:
       chdir: /home/vagrant/
       creates: /usr/sbin/dataplaneapi
-  
+
   - name: Setup haproxy and api in config config_file
+    ansible.builtin.file:
+      path: /home/vagrant/haproxy
+      state: directory
+      owner: vagrant
+      group: vagrant
+      
+  - name: Install yq for yaml processing
     ansible.builtin.shell: |
-      echo "Setup haproxy and api in config config_file"
+      echo "Install yq for yaml processing"
+      sudo snap install yq
+
+  # - name: Install yq for yaml processing
+  #   apt:
+  #     name: yq
+  #     state: latest
+  #     #update_cache: true
     

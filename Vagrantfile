@@ -11,18 +11,24 @@ Vagrant.configure("2") do |config|
             MSG
             override.vm.post_up_message = up_message
 
+            override.vm.network "public_network",
+                type: "dhcp",
+                adapter: 1
             
             override.vm.network "private_network",
                 ip: ip,
-                adapter: 1
-
+                adapter: 2
+            
+           
             vmware.gui = true
             vmware.allowlist_verified = true
             vmware.vmx['displayname'] = vmname
-            vmware.vmx['ethernet0.connectionType'] = "bridge" ## pvt network use bridge or nat depending on your network
+            vmware.vmx['ethernet0.connectionType'] = "nat" ## pvt network use bridge or nat depending on your network
             
-            vmware.vmx['ethernet1.connectionType'] = "custom"
-            vmware.vmx['ethernet1.vnet'] = vmnet
+            vmware.vmx['ethernet1.connectionType'] = "bridge"
+
+            vmware.vmx['ethernet2.connectionType'] = "custom"
+            vmware.vmx['ethernet2.vnet'] = vmnet
             
             vmware.vmx["memsize"] = memsize
             vmware.vmx["numvcpus"] = cpu
@@ -98,7 +104,7 @@ Vagrant.configure("2") do |config|
             Disk extension
         MSG
         config.vm.post_up_message = up_message
-        config.vm.disk :disk, name: vmconfig["disk_ext_size"], size: vmconfig["disk_ext_name"]
+        config.vm.disk :disk, name: vmconfig["disk_ext_name"], size: vmconfig["disk_ext_size"]
     else
         up_message = <<-MSG
             No Disk Extension
@@ -149,6 +155,7 @@ Vagrant.configure("2") do |config|
             ansible.verbose = "v"
             ansible.playbook = "ansible_disk_data.yaml"
         end
+        
     end
 
     ####### Configurations
