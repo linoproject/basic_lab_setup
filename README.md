@@ -50,6 +50,7 @@ The Vagrant configuration is compatible with:
 |          | R: Drone automation tool installation (need also D) |
 |          | T: Terraform OSS/CLI installation |
 |          | A: AWS CLI installation | 
+|          | O: OpenCode installation | 
 
 ## Vagrant Execution
 Depending on the virtual machine system it's possible to deploy this virtual machine in the following ways:

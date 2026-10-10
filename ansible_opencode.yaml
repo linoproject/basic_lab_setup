@@ -1,0 +1,35 @@
+---
+- hosts: all
+  become: true
+
+  vars:
+    opencode_user: vagrant
+
+  tasks:
+    - name: Install OpenCode prerequisites
+      apt:
+        name:
+          - curl
+          - ca-certificates
+          - tar
+        state: latest
+        update_cache: true
+
+    - name: Install OpenCode
+      ansible.builtin.shell: |
+        set -eo pipefail
+        curl -fsSL https://opencode.ai/v2/install | bash -s -- --no-modify-path
+      args:
+        executable: /bin/bash
+        creates: "/home/{{ opencode_user }}/.opencode/bin/opencode"
+      environment:
+        HOME: "/home/{{ opencode_user }}"
+      become: true
+      become_user: "{{ opencode_user }}"
+
+    - name: Add OpenCode to the system PATH
+      ansible.builtin.file:
+        src: "/home/{{ opencode_user }}/.opencode/bin/opencode"
+        dest: /usr/local/bin/opencode
+        state: link
+        force: true

@@ -200,4 +200,11 @@ Vagrant.configure("2") do |config|
             ansible.playbook = "ansible_awscli.yaml"
         end
     end
+
+    if vmconfig["config"].include?("O")
+        config.vm.provision "ansible_local" do |ansible|
+            ansible.verbose = "v"
+            ansible.playbook = "ansible_opencode.yaml"
+        end
+    end
 end

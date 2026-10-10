@@ -4,7 +4,7 @@
   vars:
     default_username: vagrant
     default_docker_group: docker
-    
+
 
   tasks:
     - name: Install aptitude
@@ -19,6 +19,7 @@
           - apt-transport-https
           - ca-certificates
           - curl
+          - gnupg
           - software-properties-common
           - python3-pip
           - virtualenv
@@ -26,14 +27,26 @@
         state: latest
         update_cache: true
 
-    - name: Add Docker GPG apt Key
-      apt_key:
+    - name: Ensure /etc/apt/keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Add Docker GPG apt key
+      ansible.builtin.get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
+        dest: /etc/apt/keyrings/docker.asc
+        owner: root
+        group: root
+        mode: '0644'
 
     - name: Add Docker Repository
-      apt_repository:
-        repo: deb https://download.docker.com/linux/ubuntu focal stable
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        filename: docker
         state: present
 
     - name: Update apt and install docker-ce
@@ -42,17 +55,23 @@
         state: latest
         update_cache: true
 
+    - name: Ensure docker service is enabled and started
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
     - name: Install Docker Module for Python
       pip:
         name: docker
-    
-    - name: Add user to {{ default_username }} to group {{ default_docker_group }}
-      user: 
+
+    - name: Ensure {{ default_docker_group }} group exists
+      ansible.builtin.group:
+        name: "{{ default_docker_group }}"
+        state: present
+
+    - name: Add {{ default_username }} to group {{ default_docker_group }}
+      user:
         name: "{{ default_username }}"
         groups: "{{ default_docker_group }}"
         append: true
-
-
-
-
- 
