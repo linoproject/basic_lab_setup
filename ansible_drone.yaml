@@ -9,7 +9,8 @@
   tasks:
     - name: Install Drone-cli
       ansible.builtin.shell: |
-        curl -L https://github.com/harness/drone-cli/releases/latest/download/drone_linux_amd64.tar.gz | tar zx
+        arch=$(dpkg --print-architecture)
+        curl -L https://github.com/harness/drone-cli/releases/latest/download/drone_linux_${arch}.tar.gz | tar zx
         sudo install -t /usr/local/bin drone
         exit 0
       args:

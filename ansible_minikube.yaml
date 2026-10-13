@@ -6,9 +6,10 @@
     - name: Install minikube
       ansible.builtin.shell: |
         set -eo pipefail
-        curl -fsSLo minikube-linux-amd64 https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-        install minikube-linux-amd64 /usr/local/bin/minikube
-        rm -f minikube-linux-amd64
+        arch=$(dpkg --print-architecture)
+        curl -fsSLo minikube-linux-${arch} https://storage.googleapis.com/minikube/releases/latest/minikube-linux-${arch}
+        install minikube-linux-${arch} /usr/local/bin/minikube
+        rm -f minikube-linux-${arch}
       args:
         executable: /bin/bash
         chdir: /tmp
@@ -23,8 +24,9 @@
     - name: Install kubectl
       ansible.builtin.shell: |
         set -eo pipefail
+        arch=$(dpkg --print-architecture)
         stable=$(curl -fsSL https://dl.k8s.io/release/stable.txt)
-        curl -fsSLo kubectl "https://dl.k8s.io/release/${stable}/bin/linux/amd64/kubectl"
+        curl -fsSLo kubectl "https://dl.k8s.io/release/${stable}/bin/linux/${arch}/kubectl"
         install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
         kubectl completion bash | tee /etc/bash_completion.d/kubectl > /dev/null
         rm -f kubectl
@@ -36,11 +38,12 @@
     - name: Install helm
       ansible.builtin.shell: |
         set -eo pipefail
+        arch=$(dpkg --print-architecture)
         version=$(curl -fsSL https://api.github.com/repos/helm/helm/releases/latest | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
-        curl -fsSLo helm.tar.gz "https://get.helm.sh/helm-${version}-linux-amd64.tar.gz"
+        curl -fsSLo helm.tar.gz "https://get.helm.sh/helm-${version}-linux-${arch}.tar.gz"
         tar -xzf helm.tar.gz
-        install -o root -g root -m 0755 linux-amd64/helm /usr/local/bin/helm
-        rm -rf helm.tar.gz linux-amd64
+        install -o root -g root -m 0755 linux-${arch}/helm /usr/local/bin/helm
+        rm -rf helm.tar.gz linux-${arch}
         helm completion bash | tee /etc/bash_completion.d/helm > /dev/null
       args:
         executable: /bin/bash

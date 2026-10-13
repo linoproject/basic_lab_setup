@@ -14,8 +14,9 @@
 
   - name: Install dataplane
     ansible.builtin.shell: |
-      curl -LO https://github.com/haproxytech/dataplaneapi/releases/download/v2.8.4/dataplaneapi_2.8.4_linux_amd64.deb
-      sudo dpkg -i dataplaneapi_2.8.4_linux_amd64.deb
+      arch=$(dpkg --print-architecture)
+      curl -LO https://github.com/haproxytech/dataplaneapi/releases/download/v2.8.4/dataplaneapi_2.8.4_linux_${arch}.deb
+      sudo dpkg -i dataplaneapi_2.8.4_linux_${arch}.deb
       exit 0
     args:
       chdir: /home/vagrant/
