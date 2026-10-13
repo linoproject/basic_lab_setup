@@ -37,6 +37,7 @@ The Vagrant configuration is compatible with:
 | ----------- | ----------- |
 | vmnet      | Networking name eg: vmnet2 (VMware) or HostNetwork (VirtualBox) |
 | ip   | fixed ip address related to vmnet network |
+| bridge | (optional, VirtualBox) host interface to bridge, eg: "en0: Wi-Fi". If omitted Vagrant asks at startup |
 
 ## Params options configs
 | Option      | Description          |

@@ -2,42 +2,62 @@
 - hosts: all
   become: true
   vars:
-    default_size: 30G
-    default_vg: ubuntu--vg
-    default_name: data
-    default_path: /opt/data
-    
-    
+    data_vg: data-vg
+    data_lv: data
+    data_path: /opt/data
+    # Leave empty to auto-detect the extension disk (the only disk with no partitions/holders)
+    data_disk: ""
+
   tasks:
-    - name: "Prepare base system"
-      shell: "echo Prepare base system"
+    - name: Find the unused extension disk
+      set_fact:
+        data_disk_candidates: >-
+          {{ ansible_devices | dict2items
+             | selectattr('key', 'match', '^(sd|vd|xvd|nvme)')
+             | selectattr('value.partitions', 'equalto', {})
+             | selectattr('value.holders', 'equalto', [])
+             | map(attribute='key') | list }}
+      when: data_vg not in (ansible_lvm.vgs | default({}))
 
-    - name: Create the "lv-data" Logical Volume.
-      lvol:
-        vg: "ubuntu-vg"
-        lv: "data"
-        size: "{{ default_size }}"
-        active: yes
-        force: no
+    - name: Check that exactly one extension disk was found
+      fail:
+        msg: "Expected one unused disk, found {{ data_disk_candidates }}. Set data_disk explicitly."
+      when:
+        - data_vg not in (ansible_lvm.vgs | default({}))
+        - data_disk == ""
+        - data_disk_candidates | length != 1
+
+    - name: Create the "{{ data_vg }}" Volume Group on the extension disk
+      lvg:
+        vg: "{{ data_vg }}"
+        pvs: "/dev/{{ data_disk if data_disk != '' else data_disk_candidates[0] }}"
         state: present
-    
-    - name: Create a "data" filesystem on lvm "/dev/mapper/ubuntu--vg-data".
+      when: data_vg not in (ansible_lvm.vgs | default({}))
+
+    - name: Create the "{{ data_lv }}" Logical Volume
+      lvol:
+        vg: "{{ data_vg }}"
+        lv: "{{ data_lv }}"
+        size: 100%FREE
+        shrink: no
+        state: present
+
+    - name: Create an ext4 filesystem on the data volume
       filesystem:
-        fstype: "ext4"
-        dev: "/dev/mapper/ubuntu--vg-{{ default_name }}"
+        fstype: ext4
+        dev: "/dev/{{ data_vg }}/{{ data_lv }}"
         force: no
 
-
-    - name: Create a directory to mount the filesystem for mysql.
+    - name: Create the mount point
       file:
-        path: "/opt/data"
+        path: "{{ data_path }}"
         state: directory
         mode: '0755'
 
-    - name: Mount www disk
+    - name: Mount the data volume
       mount:
-        path: "/opt/data"
-        src: "/dev/mapper/ubuntu--vg-{{ default_name }}"
-        fstype: "ext4"
+        path: "{{ data_path }}"
+        src: "/dev/{{ data_vg }}/{{ data_lv }}"
+        fstype: ext4
         opts: rw,nosuid,noexec
         state: mounted
