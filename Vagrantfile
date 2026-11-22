@@ -1,4 +1,43 @@
+require "fileutils"
+require "json"
+
 vmconfig = (JSON.parse(File.read(".vagrant_param.json")))
+
+WINDOWS_HOST = Vagrant::Util::Platform.windows?
+
+# macOS / Linux: unchanged from the original implementation.
+def vmware_vdiskmanager_unix
+    vdiskmanager = "/Applications/VMware Fusion.app/Contents/Library/vmware-vdiskmanager"
+    vdiskmanager = "vmware-vdiskmanager" unless File.exist?(vdiskmanager)
+    vdiskmanager
+end
+
+# Windows: Workstation/Player is not on the PATH, so look in the usual install
+# locations. Can be overridden with the VMWARE_VDISKMANAGER environment variable.
+def vmware_vdiskmanager_windows
+    candidates = []
+    candidates << ENV["VMWARE_VDISKMANAGER"] if ENV["VMWARE_VDISKMANAGER"]
+
+    ["ProgramFiles(x86)", "ProgramFiles"].each do |env_var|
+        base = ENV[env_var]
+        next if base.nil? || base.empty?
+
+        candidates << File.join(base, "VMware", "VMware Workstation", "vmware-vdiskmanager.exe")
+        candidates << File.join(base, "VMware", "VMware Player", "vmware-vdiskmanager.exe")
+    end
+
+    candidates.find { |path| File.file?(path) } || "vmware-vdiskmanager"
+end
+
+def vmware_vdiskmanager
+    WINDOWS_HOST ? vmware_vdiskmanager_windows : vmware_vdiskmanager_unix
+end
+
+# Path written into the vmx. macOS accepts forward slashes, but VMware on Windows
+# resolves them relative to the vmx folder, so use native separators there.
+def vmware_vmx_disk_path(path)
+    WINDOWS_HOST ? path.tr("/", "\\") : path
+end
 
 Vagrant.configure("2") do |config| 
 
@@ -64,7 +103,7 @@ Vagrant.configure("2") do |config|
                 ip: ip,
                 name: vmnet
             
-            
+
 
             # Host interface to bridge (e.g. "en0: Wi-Fi"); if unset Vagrant asks at `up`
             bridge_opts = bridge ? { bridge: bridge } : {}
@@ -113,17 +152,17 @@ Vagrant.configure("2") do |config|
 
         config.vm.provider "vmware_desktop" do |vmware|
             vmware.vmx["sata0:2.present"] = "TRUE"
-            vmware.vmx["sata0:2.fileName"] = ext_disk_path
+            vmware.vmx["sata0:2.fileName"] = vmware_vmx_disk_path(ext_disk_path)
         end
 
         config.trigger.before :up do |trigger|
             trigger.ruby do |env, machine|
                 if machine.provider_name == :vmware_desktop && !File.exist?(ext_disk_path)
-                    vdiskmanager = "/Applications/VMware Fusion.app/Contents/Library/vmware-vdiskmanager"
-                    vdiskmanager = "vmware-vdiskmanager" unless File.exist?(vdiskmanager)
+                    vdiskmanager = vmware_vdiskmanager
                     FileUtils.mkdir_p(File.dirname(ext_disk_path))
-                    system(vdiskmanager, "-c", "-s", vmconfig["disk_ext_size"], "-a", "sata", "-t", "0", ext_disk_path) ||
-                        raise("vmware-vdiskmanager failed to create #{ext_disk_path}")
+                    unless system(vdiskmanager, "-c", "-s", vmconfig["disk_ext_size"], "-a", "sata", "-t", "0", ext_disk_path)
+                        raise("vmware-vdiskmanager failed to create #{ext_disk_path} (command: #{vdiskmanager})")
+                    end
                 end
             end
         end
@@ -144,12 +183,16 @@ Vagrant.configure("2") do |config|
 
     config.vm.synced_folder vmconfig["homedir"], vmconfig["mountdir"]
     
-
+    # Sync CNCF Lab directory if enabled
+    if vmconfig["cncf_lab_dir"]
+        config.vm.synced_folder vmconfig["cncf_lab_dir"], "/vagrant/CNCFLab"
+    end
+     
     #### Ansible configurationa (all providers)
 
     $script = <<-'SCRIPT'
 
-       
+        
         if [ ! -d "/vagrant" ]; then 
             mkdir /vagrant
         fi  
@@ -239,4 +282,28 @@ Vagrant.configure("2") do |config|
             ansible.playbook = "ansible_opencode.yaml"
         end
     end
+
+    # CNCF Lab - Cycle on files giving a with the file prefix
+    if vmconfig["enable_cncf_lab"] == true && vmconfig["config"].to_s.include?("DMH_R_TA")
+        cncf_config = "/vagrant/CNCFLab/config.json"
+        modules_dir_host = File.expand_path("../CNCFLab/ansible/modules", __dir__)
+        modules_dir_guest = "/vagrant/CNCFLab/ansible/modules"
+        
+        if Dir.exist?(modules_dir_host)
+            Dir.glob(File.join(modules_dir_host, "*.yaml")).sort.each do |playbook_file_host|
+                playbook_name = File.basename(playbook_file_host)
+                config.vm.provision "ansible_local" do |ansible|
+                    ansible.verbose = "v"
+                    ansible.playbook = "#{modules_dir_guest}/#{playbook_name}"
+                    ansible.extra_vars = {
+                        config_file: cncf_config
+                    }
+                end
+            end
+        end
+    elsif vmconfig["enable_cncf_lab"] == true
+        puts "Warning: CNCF Lab enabled but config does not include required modules DMH_R_TA"
+    end
+
+
 end

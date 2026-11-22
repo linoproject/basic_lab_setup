@@ -9,11 +9,17 @@
   tasks:
     - name: Install Drone-cli
       ansible.builtin.shell: |
+        set -eo pipefail
         arch=$(dpkg --print-architecture)
-        curl -L https://github.com/harness/drone-cli/releases/latest/download/drone_linux_${arch}.tar.gz | tar zx
-        sudo install -t /usr/local/bin drone
-        exit 0
+        curl -fsSL "https://github.com/harness/drone-cli/releases/latest/download/drone_linux_${arch}.tar.gz" -o /tmp/drone.tar.gz
+        tar -xzf /tmp/drone.tar.gz -C /tmp drone
+        install -m 0755 /tmp/drone /usr/local/bin/drone
+        rm -f /tmp/drone.tar.gz /tmp/drone
       args:
-        chdir: /home/vagrant/
+        executable: /bin/bash
         creates: /usr/local/bin/drone
+      register: drone_install
+      until: drone_install is not failed
+      retries: 5
+      delay: 10
   

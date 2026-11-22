@@ -14,13 +14,19 @@
 
   - name: Install dataplane
     ansible.builtin.shell: |
+      set -eo pipefail
       arch=$(dpkg --print-architecture)
-      curl -LO https://github.com/haproxytech/dataplaneapi/releases/download/v2.8.4/dataplaneapi_2.8.4_linux_${arch}.deb
-      sudo dpkg -i dataplaneapi_2.8.4_linux_${arch}.deb
-      exit 0
+      curl -fsSLo "/tmp/dataplaneapi_2.8.4_linux_${arch}.deb" "https://github.com/haproxytech/dataplaneapi/releases/download/v2.8.4/dataplaneapi_2.8.4_linux_${arch}.deb"
+      dpkg -i "/tmp/dataplaneapi_2.8.4_linux_${arch}.deb"
+      rm -f "/tmp/dataplaneapi_2.8.4_linux_${arch}.deb"
     args:
+      executable: /bin/bash
       chdir: /home/vagrant/
       creates: /usr/sbin/dataplaneapi
+    register: dataplane_install
+    until: dataplane_install is not failed
+    retries: 5
+    delay: 10
 
   - name: Setup haproxy and api in config config_file
     ansible.builtin.file:
